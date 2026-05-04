@@ -17,7 +17,7 @@ namespace BongoBeat
         [DllImport("user32.dll")]
         private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
-        private const byte VK_LCONTROL      = 0xA2;
+        private const byte VK_LALT           = 0xA4;
         private const uint KEYEVENTF_KEYDOWN = 0x0000;
         private const uint KEYEVENTF_KEYUP   = 0x0002;
         private const int  WM_HOTKEY         = 0x0312;
@@ -163,9 +163,9 @@ namespace BongoBeat
 
         private void PerformPress()
         {
-            keybd_event(VK_LCONTROL, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
+            keybd_event(VK_LALT, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
             Thread.Sleep(20);
-            keybd_event(VK_LCONTROL, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(VK_LALT, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)
