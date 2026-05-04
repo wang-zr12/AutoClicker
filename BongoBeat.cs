@@ -17,7 +17,6 @@ namespace BongoBeat
         [DllImport("user32.dll")]
         private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
-        private const byte VK_LALT           = 0xA4;
         private const uint KEYEVENTF_KEYDOWN = 0x0000;
         private const uint KEYEVENTF_KEYUP   = 0x0002;
         private const int  WM_HOTKEY         = 0x0312;
@@ -25,12 +24,14 @@ namespace BongoBeat
         private const int  HOTKEY_ESC        = 2;
 
         private TextBox speedInput;
+        private TextBox keyInput;
         private Label   statusLabel;
         private Point   dragStartPoint;
         private bool    isDragging = false;
 
         private bool   isClicking     = false;
         private int    clicksPerSecond = 10;
+        private byte   activeVk       = 0xA4; // VK_LMENU (Left Alt)
         private Thread clickThread;
 
         public BongoBeatForm()
@@ -42,7 +43,7 @@ namespace BongoBeat
         private void InitializeUI()
         {
             this.Text            = "BongoBeat";
-            this.Size            = new Size(140, 70);
+            this.Size            = new Size(140, 95);
             this.FormBorderStyle = FormBorderStyle.FixedToolWindow;
             this.TopMost         = true;
             this.StartPosition   = FormStartPosition.CenterScreen;
@@ -79,9 +80,18 @@ namespace BongoBeat
                 ForeColor = Color.Gray
             };
 
+            keyInput = new TextBox
+            {
+                Location = new Point(10, 42),
+                Size     = new Size(115, 20),
+                Text     = "Alt",
+                Font     = new Font("Arial", 9)
+            };
+
             this.Controls.Add(speedInput);
             this.Controls.Add(statusLabel);
             this.Controls.Add(helpLabel);
+            this.Controls.Add(keyInput);
 
             this.MouseDown += Form_MouseDown;
             this.MouseMove += Form_MouseMove;
@@ -136,9 +146,13 @@ namespace BongoBeat
             if (!int.TryParse(speedInput.Text, out clicksPerSecond)) return;
             if (clicksPerSecond < 1 || clicksPerSecond > 500)        return;
 
-            isClicking              = true;
-            statusLabel.ForeColor   = Color.Lime;
-            speedInput.Enabled      = false;
+            byte vk = ParseKey(keyInput.Text.Trim());
+            activeVk = vk != 0 ? vk : (byte)0xA4;
+
+            isClicking            = true;
+            statusLabel.ForeColor = Color.Lime;
+            speedInput.Enabled    = false;
+            keyInput.Enabled      = false;
 
             clickThread = new Thread(ClickLoop) { IsBackground = true };
             clickThread.Start();
@@ -149,6 +163,7 @@ namespace BongoBeat
             isClicking            = false;
             statusLabel.ForeColor = Color.Red;
             speedInput.Enabled    = true;
+            keyInput.Enabled      = true;
         }
 
         private void ClickLoop()
@@ -161,11 +176,21 @@ namespace BongoBeat
             }
         }
 
+        private byte ParseKey(string name)
+        {
+            if (name.Equals("Alt",   StringComparison.OrdinalIgnoreCase)) return 0xA4;
+            if (name.Equals("Ctrl",  StringComparison.OrdinalIgnoreCase)) return 0xA2;
+            if (name.Equals("Shift", StringComparison.OrdinalIgnoreCase)) return 0xA0;
+            Keys k;
+            if (Enum.TryParse(name, true, out k) && (int)k <= 0xFF) return (byte)k;
+            return 0;
+        }
+
         private void PerformPress()
         {
-            keybd_event(VK_LALT, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
+            keybd_event(activeVk, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
             Thread.Sleep(20);
-            keybd_event(VK_LALT, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(activeVk, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)
